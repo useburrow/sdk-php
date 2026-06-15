@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-06-15
+
+### Added
+
+- Statamic platform support for the `useburrow/statamic-burrow` addon:
+  - `EventSourceResolver::getDefaultEventSource('statamic')` returns `statamic-addon`.
+  - Forms provider resolution for `statamic-forms` / `statamicforms`.
+  - Ecommerce provider resolution for `cargo`.
+  - `ApplyClientPlatformDefault` treats `statamic` like `craft` / `wordpress`, clearing mismatched CMS plugin sources (including `statamic-addon` on non-Statamic clients) so ingest infers the correct default source.
+
 ## [0.9.7] - 2026-03-27
 
 ### Changed
