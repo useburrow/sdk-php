@@ -607,8 +607,11 @@ final class CanonicalEnvelopeBuilders
         if ($includeInputTags && is_array($input['tags'] ?? null)) {
             foreach ($input['tags'] as $key => $value) {
                 if (is_string($key) && is_string($value) && trim($value) !== '') {
-                    $sanitized = ReservedCanonicalKeys::sanitizeCanonicalKey($key);
-                    $tags[$sanitized['key']] = trim($value);
+                    $sanitizedKey = ReservedCanonicalKeys::sanitizeIncomingDimensionKey($key);
+                    if ($sanitizedKey === '') {
+                        continue;
+                    }
+                    $tags[$sanitizedKey] = trim($value);
                 }
             }
         }
@@ -652,7 +655,7 @@ final class CanonicalEnvelopeBuilders
             return $base;
         }
 
-        $sanitized = ReservedCanonicalKeys::sanitizePropertyAndTagKeys($custom)['map'];
+        $sanitized = ReservedCanonicalKeys::sanitizePropertyAndTagKeys($custom);
         foreach ($sanitized as $key => $value) {
             if (!array_key_exists($key, $base)) {
                 $base[$key] = $value;

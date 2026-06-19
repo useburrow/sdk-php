@@ -53,8 +53,9 @@ final class ContractFixturesTest extends TestCase
         $mappings = $payload['formsContracts'][0]['fieldMappings'];
 
         $this->assertSame('feed_channel', $mappings[0]['canonicalKey']);
-        $this->assertSame('feed_submissionId', $mappings[1]['canonicalKey']);
+        $this->assertSame('feed_source', $mappings[1]['canonicalKey']);
         $this->assertSame('feed_customField', $mappings[2]['canonicalKey']);
+        $this->assertSame('submissionId', $mappings[3]['canonicalKey']);
         $this->assertNotEmpty($request->warnings());
     }
 

@@ -18,7 +18,7 @@ final readonly class FormsContractSubmissionRequest
      */
     public function toArray(): array
     {
-        return FormsContractWizardHelpers::sanitizeFormsContractSubmissionPayload($this->payload)['payload'];
+        return FormsContractWizardHelpers::sanitizeFormsContractSubmissionPayloadForPost($this->payload);
     }
 
     /**

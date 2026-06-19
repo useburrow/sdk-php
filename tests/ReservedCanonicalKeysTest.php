@@ -15,6 +15,29 @@ final class ReservedCanonicalKeysTest extends TestCase
         $this->assertSame('feed_', ReservedCanonicalKeys::FEED_PREFIX);
     }
 
+    public function testReservedKeyListMatchesBurrowSourceOfTruth(): void
+    {
+        $this->assertSame([
+            'organizationId',
+            'clientId',
+            'projectId',
+            'integrationId',
+            'projectSourceId',
+            'clientSourceId',
+            'channel',
+            'event',
+            'timestamp',
+            'source',
+            'schemaVersion',
+            'isLifecycle',
+            'entityType',
+            'externalEntityId',
+            'externalEventId',
+            'state',
+            'stateChangedAt',
+        ], ReservedCanonicalKeys::ALL);
+    }
+
     #[DataProvider('reservedKeyProvider')]
     public function testDetectsReservedKeys(string $key): void
     {
@@ -26,53 +49,50 @@ final class ReservedCanonicalKeysTest extends TestCase
      */
     public static function reservedKeyProvider(): array
     {
+        return array_map(
+            static fn (string $key): array => [$key],
+            ReservedCanonicalKeys::ALL
+        );
+    }
+
+    #[DataProvider('nonReservedKeyProvider')]
+    public function testDoesNotTreatCommonFormKeysAsReserved(string $key): void
+    {
+        $this->assertFalse(ReservedCanonicalKeys::isReserved($key));
+    }
+
+    /**
+     * @return list<array{0:string}>
+     */
+    public static function nonReservedKeyProvider(): array
+    {
         return [
-            ['channel'],
+            ['formId'],
             ['submissionId'],
-            ['formName'],
-            ['provider'],
-            ['orderId'],
-            ['properties'],
+            ['submittedAt'],
+            ['serviceInterest'],
+            ['feed_customField'],
+            ['feed_channel'],
+            ['Channel'],
         ];
     }
 
-    public function testFeedPrefixedKeysAreNotReserved(): void
+    public function testEmptyKeyReturnsEmptyStringWithoutRewrite(): void
     {
-        $this->assertFalse(ReservedCanonicalKeys::isReserved('feed_channel'));
-        $this->assertFalse(ReservedCanonicalKeys::isReserved('feed_customField'));
+        $this->assertSame('', ReservedCanonicalKeys::sanitizeIncomingDimensionKey('   '));
+        $this->assertSame('', ReservedCanonicalKeys::sanitizeCanonicalKey(''));
     }
 
     public function testPrefixesReservedKeysWithFeedNamespace(): void
     {
-        $result = ReservedCanonicalKeys::sanitizeCanonicalKey('channel');
-
-        $this->assertSame('feed_channel', $result['key']);
-        $this->assertCount(1, $result['warnings']);
-        $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $result['warnings'][0]['code']);
-        $this->assertSame('channel', $result['warnings'][0]['originalKey']);
-        $this->assertSame('feed_channel', $result['warnings'][0]['sanitizedKey']);
+        $this->assertSame('feed_channel', ReservedCanonicalKeys::sanitizeIncomingDimensionKey('channel'));
+        $this->assertSame('feed_source', ReservedCanonicalKeys::sanitizeIncomingDimensionKey('source'));
     }
 
     public function testDoesNotDoublePrefixFeedKeys(): void
     {
-        $result = ReservedCanonicalKeys::sanitizeCanonicalKey('feed_channel');
-
-        $this->assertSame('feed_channel', $result['key']);
-        $this->assertSame([], $result['warnings']);
-    }
-
-    public function testDefaultsEmptyKeysToField(): void
-    {
-        $result = ReservedCanonicalKeys::sanitizeCanonicalKey('   ');
-
-        $this->assertSame('field', $result['key']);
-        $this->assertSame('EMPTY_CANONICAL_KEY', $result['warnings'][0]['code']);
-    }
-
-    public function testLabelToCanonicalKeyMatchesCraftStyle(): void
-    {
-        $this->assertSame('serviceInterest', ReservedCanonicalKeys::labelToCanonicalKey('What service are you interested in?'));
-        $this->assertSame('field', ReservedCanonicalKeys::labelToCanonicalKey('   '));
+        $this->assertSame('feed_source', ReservedCanonicalKeys::sanitizeIncomingDimensionKey('feed_source'));
+        $this->assertSame('feed_customField', ReservedCanonicalKeys::sanitizeIncomingDimensionKey('feed_customField'));
     }
 
     public function testSanitizesRuntimePropertyAndTagMaps(): void
@@ -81,20 +101,21 @@ final class ReservedCanonicalKeysTest extends TestCase
             'serviceInterest' => 'Web Design',
             'channel' => 'email',
             'feed_customField' => 'kept',
+            'submissionId' => 'sub_123',
+            '   ' => 'ignored',
         ]);
 
         $this->assertSame([
             'serviceInterest' => 'Web Design',
             'feed_channel' => 'email',
             'feed_customField' => 'kept',
-        ], $result['map']);
-        $this->assertCount(1, $result['warnings']);
-        $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $result['warnings'][0]['code']);
+            'submissionId' => 'sub_123',
+        ], $result);
     }
 
     public function testFixtureParityCases(): void
     {
-        $fixturePath = self::specContractsDir() . '/reserved-canonical-keys.fixtures.json';
+        $fixturePath = self::specFixturesDir() . '/reserved-canonical-keys.json';
         $contents = file_get_contents($fixturePath);
         self::assertNotFalse($contents);
 
@@ -104,23 +125,21 @@ final class ReservedCanonicalKeysTest extends TestCase
 
         foreach ($decoded['cases'] as $case) {
             self::assertIsArray($case);
-            $result = ReservedCanonicalKeys::sanitizeCanonicalKey((string) $case['input']);
-            $this->assertSame($case['expectedKey'], $result['key'], (string) $case['input']);
             $this->assertSame(
-                $case['expectedWarningCodes'],
-                array_map(static fn (array $warning): string => $warning['code'], $result['warnings']),
+                $case['output'],
+                ReservedCanonicalKeys::sanitizeIncomingDimensionKey((string) $case['input']),
                 (string) $case['input']
             );
         }
     }
 
-    private static function specContractsDir(): string
+    private static function specFixturesDir(): string
     {
-        $standalone = dirname(__DIR__) . '/spec/contracts';
+        $standalone = dirname(__DIR__) . '/spec/fixtures';
         if (is_dir($standalone)) {
             return $standalone;
         }
 
-        return dirname(__DIR__, 2) . '/spec/contracts';
+        return dirname(__DIR__, 2) . '/spec/fixtures';
     }
 }

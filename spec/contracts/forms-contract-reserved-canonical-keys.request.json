@@ -27,12 +27,12 @@
           "reportable": true
         },
         {
-          "externalFieldId": "submission_id_copy",
-          "sourceLabel": "Submission ID Copy",
-          "canonicalKey": "submissionId",
-          "target": "properties",
+          "externalFieldId": "referral_source",
+          "sourceLabel": "Referral Source",
+          "canonicalKey": "source",
+          "target": "tags",
           "dataType": "string",
-          "reportable": false
+          "reportable": true
         },
         {
           "externalFieldId": "already_prefixed",
@@ -41,6 +41,14 @@
           "target": "tags",
           "dataType": "string",
           "reportable": true
+        },
+        {
+          "externalFieldId": "submission_id_copy",
+          "sourceLabel": "Submission ID Copy",
+          "canonicalKey": "submissionId",
+          "target": "properties",
+          "dataType": "string",
+          "reportable": false
         }
       ]
     }

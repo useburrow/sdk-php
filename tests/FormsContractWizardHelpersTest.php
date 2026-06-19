@@ -27,7 +27,25 @@ final class FormsContractWizardHelpersTest extends TestCase
         $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $result['warnings'][0]['code']);
     }
 
-    public function testSanitizeFormsContractSubmissionPayloadFromFixture(): void
+    public function testSanitizeFormsContractSubmissionPayloadFromFixtureUsesBurrowPostRules(): void
+    {
+        $fixturePath = self::specContractsDir() . '/forms-contract-reserved-canonical-keys.request.json';
+        $contents = file_get_contents($fixturePath);
+        self::assertNotFalse($contents);
+
+        $decoded = json_decode($contents, true);
+        self::assertIsArray($decoded);
+
+        $payload = FormsContractWizardHelpers::sanitizeFormsContractSubmissionPayloadForPost($decoded);
+        $mappings = $payload['formsContracts'][0]['fieldMappings'];
+
+        $this->assertSame('feed_channel', $mappings[0]['canonicalKey']);
+        $this->assertSame('feed_source', $mappings[1]['canonicalKey']);
+        $this->assertSame('feed_customField', $mappings[2]['canonicalKey']);
+        $this->assertSame('submissionId', $mappings[3]['canonicalKey']);
+    }
+
+    public function testWizardPayloadWarningsIncludeReservedPrefixing(): void
     {
         $fixturePath = self::specContractsDir() . '/forms-contract-reserved-canonical-keys.request.json';
         $contents = file_get_contents($fixturePath);
@@ -37,12 +55,12 @@ final class FormsContractWizardHelpersTest extends TestCase
         self::assertIsArray($decoded);
 
         $result = FormsContractWizardHelpers::sanitizeFormsContractSubmissionPayload($decoded);
-        $mappings = $result['payload']['formsContracts'][0]['fieldMappings'];
+        $warnings = $result['warnings'];
 
-        $this->assertSame('feed_channel', $mappings[0]['canonicalKey']);
-        $this->assertSame('feed_submissionId', $mappings[1]['canonicalKey']);
-        $this->assertSame('feed_customField', $mappings[2]['canonicalKey']);
-        $this->assertCount(2, $result['warnings']);
+        $this->assertSame('feed_channel', $result['payload']['formsContracts'][0]['fieldMappings'][0]['canonicalKey']);
+        $this->assertCount(2, $warnings);
+        $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $warnings[0]['code']);
+        $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $warnings[1]['code']);
     }
 
     public function testFormsContractSubmissionRequestSanitizesOnPost(): void
@@ -73,6 +91,28 @@ final class FormsContractWizardHelpersTest extends TestCase
         $this->assertSame('RESERVED_CANONICAL_KEY_PREFIXED', $warnings[0]['code']);
     }
 
+    public function testWizardEmptyKeyDefaultsToField(): void
+    {
+        $result = FormsContractWizardHelpers::sanitizeCanonicalKey('   ');
+
+        $this->assertSame('field', $result['key']);
+        $this->assertSame('EMPTY_CANONICAL_KEY', $result['warnings'][0]['code']);
+    }
+
+    public function testWizardLabelSlugificationIsSeparateFromBurrowSanitizer(): void
+    {
+        $result = FormsContractWizardHelpers::sanitizeCanonicalKey('Preferred Channel');
+
+        $this->assertSame('preferredChannel', $result['key']);
+        $this->assertSame('INVALID_CANONICAL_KEY_NORMALIZED', $result['warnings'][0]['code']);
+    }
+
+    public function testLabelToCanonicalKeyMatchesCraftStyle(): void
+    {
+        $this->assertSame('serviceInterest', FormsContractWizardHelpers::labelToCanonicalKey('What service are you interested in?'));
+        $this->assertSame('field', FormsContractWizardHelpers::labelToCanonicalKey('   '));
+    }
+
     public function testRuntimeFormsBuilderSanitizesCustomMaps(): void
     {
         $resolver = new ChannelRoutingResolver(new ChannelRoutingState(
@@ -92,14 +132,14 @@ final class FormsContractWizardHelpersTest extends TestCase
                 'channel' => 'email',
             ],
             'properties' => [
-                'channel' => 'should-be-prefixed',
+                'source' => 'should-be-prefixed',
             ],
         ], $resolver);
 
         $this->assertSame('forms.submission.received', $event['event']);
         $this->assertSame('sub_98765', $event['properties']['submissionId']);
-        $this->assertSame('feed_channel', $event['properties']['feed_channel']);
-        $this->assertArrayNotHasKey('channel', $event['properties']);
+        $this->assertSame('should-be-prefixed', $event['properties']['feed_source']);
+        $this->assertArrayNotHasKey('source', $event['properties']);
         $this->assertSame('Web Design', $event['tags']['serviceInterest']);
         $this->assertSame('email', $event['tags']['feed_channel']);
     }

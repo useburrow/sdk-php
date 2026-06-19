@@ -10,12 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Reserved canonical key handling with Burrow `feed_` prefix behavior:
-  - `ReservedCanonicalKeys` centralizes envelope/forms/ecommerce reserved keys and runtime sanitization helpers.
-  - `FormsContractWizardHelpers` exposes wizard helpers with structured warnings for contract field mappings.
-  - `FormsContractSubmissionRequest` sanitizes `fieldMappings[].canonicalKey` on contract POST.
+  - `ReservedCanonicalKeys` mirrors Burrow's 17-key reserved list and `sanitizeIncomingDimensionKey()` rules exactly.
+  - `FormsContractWizardHelpers` exposes wizard-only UX helpers (empty-key fallback, label slugification, warnings) separate from Burrow ingest sanitization.
+  - `FormsContractSubmissionRequest` sanitizes `fieldMappings[].canonicalKey` on contract POST using Burrow-parity rules.
   - `CanonicalEnvelopeBuilders::buildFormsSubmissionReceivedEvent()` sanitizes custom runtime properties/tags.
   - Ecommerce builders sanitize user-provided input tags before merging derived canonical tags.
-- Shared contract fixtures under `spec/contracts/`, including reserved-key parity fixtures.
+- Shared fixtures under `spec/contracts/` and `spec/fixtures/reserved-canonical-keys.json` for parity tests.
 
 ## [0.9.8] - 2026-06-15
 
