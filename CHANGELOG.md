@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Reserved canonical key handling with Burrow `feed_` prefix behavior:
+  - `ReservedCanonicalKeys` centralizes envelope/forms/ecommerce reserved keys and runtime sanitization helpers.
+  - `FormsContractWizardHelpers` exposes wizard helpers with structured warnings for contract field mappings.
+  - `FormsContractSubmissionRequest` sanitizes `fieldMappings[].canonicalKey` on contract POST.
+  - `CanonicalEnvelopeBuilders::buildFormsSubmissionReceivedEvent()` sanitizes custom runtime properties/tags.
+  - Ecommerce builders sanitize user-provided input tags before merging derived canonical tags.
+- Shared contract fixtures under `spec/contracts/`, including reserved-key parity fixtures.
+
 ## [0.9.8] - 2026-06-15
 
 ### Added
